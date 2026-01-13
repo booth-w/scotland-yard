@@ -5,18 +5,19 @@ services:
     environment:
       POSTGRES_USER: gameuser
       POSTGRES_PASSWORD: gamepass
-      POSTGRES_DB: gamedb
+      POSTGRES_DB: game
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-    
-    adminer:
-      image: adminer
-      container_name: scotlandyard_adminer
-      ports:
+
+  adminer:
+    image: adminer
+    container_name: scotlandyard_adminer
+    ports:
       - "8080:8080"
     depends_on:
       - db
 
 volumes:
+  pgdata:
