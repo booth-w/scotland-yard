@@ -16,6 +16,7 @@ npm install
 cp .env.example .env
 npx prisma migrate dev
 npm run dev
+Visit: http://localhost:3000/health
 
 ### Adminer (DB UI)
 http://localhost:8080
