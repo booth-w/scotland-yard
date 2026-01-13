@@ -1,0 +1,222 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum GameStatus {
+  LOBBY
+  ACTIVE
+  FINISHED
+  ABANDONED
+}
+
+enum PlayerRole {
+  MRX
+  DETECTIVE
+}
+
+enum TicketType {
+  TAXI
+  BUS
+  UNDERGROUND
+  BLACK
+  DOUBLE
+}
+
+enum TransportType {
+  TAXI
+  BUS
+  UNDERGROUND
+  FERRY
+}
+
+enum MoveVisibility {
+  HIDDEN
+  REVEALED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  createdAt DateTime @default(now())
+
+  // Lobby + game participation
+  memberships LobbyMember[]
+  players     GamePlayer[]
+
+  // Hosting lobbies (fixes opposite relation for Lobby.host)
+  hostedLobbies Lobby[] @relation("LobbyHost")
+}
+
+model Lobby {
+  id         String     @id @default(cuid())
+  code       String     @unique
+  hostUserId String
+  status     GameStatus @default(LOBBY)
+  createdAt  DateTime   @default(now())
+
+  // Named relation so Prisma can match the opposite field on User
+  host    User          @relation("LobbyHost", fields: [hostUserId], references: [id])
+  members LobbyMember[]
+  game    Game?
+}
+
+model LobbyMember {
+  id       String   @id @default(cuid())
+  lobbyId  String
+  userId   String
+  joinedAt DateTime @default(now())
+
+  lobby Lobby @relation(fields: [lobbyId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([lobbyId, userId])
+}
+
+model Game {
+  id        String     @id @default(cuid())
+  lobbyId   String     @unique
+  status    GameStatus @default(ACTIVE)
+  createdAt DateTime   @default(now())
+  endedAt   DateTime?
+
+  // Round + turn tracking
+  roundNumber         Int     @default(1) // 1-based
+  maxRounds           Int     @default(24)
+  currentTurnPlayerId String?
+  detectivesCount     Int     @default(0)
+
+  lobby        Lobby         @relation(fields: [lobbyId], references: [id], onDelete: Cascade)
+  players      GamePlayer[]
+  moves        Move[]
+  revealRounds RevealRound[]
+
+  // Fixes opposite relation for TicketEvent.game
+  ticketEvents TicketEvent[]
+
+  @@index([status])
+}
+
+model GamePlayer {
+  id         String     @id @default(cuid())
+  gameId     String
+  userId     String
+  role       PlayerRole
+  orderIndex Int
+  isActive   Boolean    @default(true)
+
+  // Current position (board node)
+  locationId Int?
+
+  // Ticket counts
+  taxi        Int @default(0)
+  bus         Int @default(0)
+  underground Int @default(0)
+  black       Int @default(0)
+  double      Int @default(0)
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Named relation so Location has a clear opposite field
+  location Location? @relation("PlayerLocation", fields: [locationId], references: [id])
+
+  ticketEvents TicketEvent[]
+  moves        Move[]        @relation("MoveByPlayer")
+
+  @@unique([gameId, userId])
+  @@index([gameId, role])
+}
+
+model TicketEvent {
+  id        String     @id @default(cuid())
+  gameId    String
+  playerId  String
+  type      TicketType
+  delta     Int
+  reason    String
+  createdAt DateTime   @default(now())
+
+  game   Game       @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  player GamePlayer @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([gameId, playerId])
+}
+
+model Move {
+  id          String   @id @default(cuid())
+  gameId      String
+  playerId    String
+  roundNumber Int
+  turnIndex   Int
+  createdAt   DateTime @default(now())
+
+  fromLocationId Int?
+  toLocationId   Int?
+
+  ticketUsed TicketType
+  transport  TransportType?
+  visibility MoveVisibility @default(REVEALED)
+
+  // Mr X support
+  isSecret     Boolean @default(false)
+  isDoublePart Boolean @default(false)
+  doubleMoveId String?
+
+  game   Game       @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  player GamePlayer @relation("MoveByPlayer", fields: [playerId], references: [id], onDelete: Cascade)
+
+  // Named relations so Location can have distinct opposite fields
+  fromLocation Location? @relation("MoveFrom", fields: [fromLocationId], references: [id])
+  toLocation   Location? @relation("MoveTo", fields: [toLocationId], references: [id])
+
+  @@index([gameId, roundNumber])
+  @@index([gameId, playerId])
+}
+
+model RevealRound {
+  id          String   @id @default(cuid())
+  gameId      String
+  roundNumber Int
+  createdAt   DateTime @default(now())
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, roundNumber])
+}
+
+//
+// Board graph (locations + edges)
+//
+
+model Location {
+  id   Int     @id
+  name String?
+  x    Float?
+  y    Float?
+
+  edgesFrom Edge[] @relation("EdgeFrom")
+  edgesTo   Edge[] @relation("EdgeTo")
+
+  // Opposite relations to satisfy Prisma validation
+  playersHere GamePlayer[] @relation("PlayerLocation")
+  movesFrom   Move[]       @relation("MoveFrom")
+  movesTo     Move[]       @relation("MoveTo")
+}
+
+model Edge {
+  id        String        @id @default(cuid())
+  fromId    Int
+  toId      Int
+  transport TransportType
+
+  from Location @relation("EdgeFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  to   Location @relation("EdgeTo", fields: [toId], references: [id], onDelete: Cascade)
+
+  @@unique([fromId, toId, transport])
+  @@index([fromId])
+  @@index([toId])
+}
