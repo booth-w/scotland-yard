@@ -1,37 +1,42 @@
 require("dotenv").config();
 
 const express = require("express");
+const path = require("path");
+
 const { PrismaClient } = require("@prisma/client");
 const { PrismaPg } = require("@prisma/adapter-pg");
 const { Pool } = require("pg");
 
+// ----- Prisma (Prisma 7 requires adapter for direct Postgres) -----
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
-
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 const app = express();
 
-app.get("/", (req, res) => {
-  res.send("Server is running  Try /health or /status");
-});
+// Serve static HTML from server/public
+app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/health", async (req, res) => {
   await prisma.$queryRaw`SELECT 1`;
   res.json({ ok: true });
 });
 
-app.get("/status", (req, res) => {
+app.get("/status", async (req, res) => {
+  // Optional DB check
+  await prisma.$queryRaw`SELECT 1`;
+
   res.json({
     status: "running",
-    uptime: process.uptime(), // seconds
+    uptime: process.uptime(),
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || "development",
+    db: "ok",
   });
 });
 
-app.listen(3000, () => {
-  console.log("Server running on http://localhost:3000");
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
 });
