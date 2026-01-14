@@ -5,21 +5,35 @@ COM5043 assessment 1
 
 ### Requirements
 - Docker Desktop
-- Node.js (LTS)
+- Node.js 20 (LTS)
 
 ### Start database
 docker compose up -d
 
-### Backend
-cd server
-npm install
-cp .env.example .env
-npx prisma migrate dev
-npm run dev
-Visit: http://localhost:3000/health
-
 ### Adminer (DB UI)
 http://localhost:8080
+
+
+### Backend (FIRST TIME)
+* cd server
+* npm install
+* cp .env.example .env
+* npx prisma migrate dev
+* npm run dev
+* Visit: http://localhost:3000/health
+
+### Backend (Daily startup)
+* cd server
+* npm run dev
+
+### Server check
+http://localhost:3000/health
+
+### Updated prisma schema?
+* npx prisma migrate dev
+
+### Regenerate client if schema changes
+* npx prisma generate
 
 # Model
 * Docker → creates the database
