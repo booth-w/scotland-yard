@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "node index.js",
+    "dev": "npx ts-node src/app.ts",
+    "build": "tsc",
     "migrate": "prisma migrate dev",
     "generate": "prisma generate"
   },
@@ -19,5 +20,10 @@
     "express": "^5.2.1",
     "pg": "^8.16.3",
     "prisma": "^7.2.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.0.8",
+    "@types/pg": "^8.16.0"
   }
 }
