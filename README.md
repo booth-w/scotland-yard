@@ -27,7 +27,9 @@ http://localhost:8080
 * npm run dev
 
 ### Server check
-http://localhost:3000/health
+http://localhost:3000/ - Index which shows server running and other commands
+http://localhost:3000/health - DB connection establishment
+http://localhost:3000/status - Endpoint that checks DB tables exist and creations (lobby etc)
 
 ### Updated prisma schema?
 * npx prisma migrate dev
