@@ -4,26 +4,28 @@ COM5043 assessment 1
 ## Local development setup
 
 ### Requirements
-- Docker Desktop
-- Node.js 20 (LTS)
+* docker & docker compose ([Docker Desktop](https://www.docker.com/products/docker-desktop/) provides both)
+* Node.js 20 (LTS)
 
 ### Start database
+
+```bash
 docker compose up -d
+```
 
 ### Adminer (DB UI)
 http://localhost:8080
 
-
 ### Backend (FIRST TIME)
-* cd server
-* npm install
+* cd backend
 * cp .env.example .env
-* npx prisma migrate dev
+* npm install
+* npm run migrate
 * npm run dev
 * Visit: http://localhost:3000/health
 
 ### Backend (Daily startup)
-* cd server
+* cd backend
 * npm run dev
 
 ### Server check
